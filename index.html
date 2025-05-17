@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Year 6 Mental Maths Quiz</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    .quiz-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .timer {
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    .input-container {
+      margin-top: 20px;
+    }
+    input[type="number"] {
+      font-size: 1.5em;
+      width: 100px;
+      text-align: center;
+    }
+    button {
+      font-size: 1em;
+      padding: 10px 20px;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="quiz-container">
+    <h1>Year 6 Mental Maths</h1>
+    <button id="start-btn">Start Quiz</button>
+
+    <div id="question-number" style="display:none; margin-top:20px;">
+      Question <span id="current">1</span> of 10
+    </div>
+
+    <div class="timer" id="timer" style="display:none;">0</div>
+
+    <div class="input-container" id="input-container" style="display:none;">
+      <label for="answer">Your answer:</label>
+      <input type="number" id="answer" autocomplete="off">
+      <button id="submit-btn">Submit</button>
+    </div>
+
+    <div id="results" style="display:none;"></div>
+  </div>
+
+  <script>
+    // Define questions (first 5: 5s, next 5: 10s)
+    const questions = [
+      { text: 'What is twelve plus eight?', time: 5, answer: 20 },
+      { text: 'What is seven times six?', time: 5, answer: 42 },
+      { text: 'What is forty-five minus nineteen?', time: 5, answer: 26 },
+      { text: 'What is nine plus fifteen?', time: 5, answer: 24 },
+      { text: 'What is eight times five?', time: 5, answer: 40 },
+      { text: 'What is thirty-six divided by four?', time: 10, answer: 9 },
+      { text: 'What is twenty-five times twelve?', time: 10, answer: 300 },
+      { text: 'What is one hundred and fifty minus seventy-five?', time: 10, answer: 75 },
+      { text: 'What is seventeen times eight?', time: 10, answer: 136 },
+      { text: 'What is eighty-one divided by nine?', time: 10, answer: 9 }
+    ];
+    let currentQuestion = 0;
+    const userAnswers = [];
+
+    const startBtn = document.getElementById('start-btn');
+    const questionNumberDiv = document.getElementById('question-number');
+    const currentSpan = document.getElementById('current');
+    const timerDiv = document.getElementById('timer');
+    const inputContainer = document.getElementById('input-container');
+    const answerInput = document.getElementById('answer');
+    const submitBtn = document.getElementById('submit-btn');
+    const resultsDiv = document.getElementById('results');
+
+    startBtn.addEventListener('click', startQuiz);
+    submitBtn.addEventListener('click', submitAnswer);
+
+    function startQuiz() {
+      startBtn.style.display = 'none';
+      resultsDiv.style.display = 'none';
+      currentQuestion = 0;
+      askQuestion();
+    }
+
+    function askQuestion() {
+      const q = questions[currentQuestion];
+      questionNumberDiv.style.display = 'block';
+      currentSpan.textContent = currentQuestion + 1;
+
+      // Read the question twice then start the timer
+      const utter1 = new SpeechSynthesisUtterance(q.text);
+      utter1.lang = 'en-GB';
+      utter1.rate = 1;
+      utter1.onend = () => {
+        const utter2 = new SpeechSynthesisUtterance(q.text);
+        utter2.lang = 'en-GB';
+        utter2.rate = 1;
+        utter2.onend = () => startTimer(q.time);
+        speechSynthesis.speak(utter2);
+      };
+      speechSynthesis.speak(utter1);
+    }
+
+    function startTimer(seconds) {
+      let timeLeft = seconds;
+      timerDiv.style.display = 'block';
+      inputContainer.style.display = 'block';
+      answerInput.value = '';
+      answerInput.focus();
+      timerDiv.textContent = timeLeft;
+
+      const interval = setInterval(() => {
+        timeLeft--;
+        timerDiv.textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          recordAnswer();
+        }
+      }, 1000);
+    }
+
+    function submitAnswer() {
+      recordAnswer();
+    }
+
+    function recordAnswer() {
+      const q = questions[currentQuestion];
+      const userAns = parseInt(answerInput.value, 10);
+      userAnswers.push({ correct: userAns === q.answer, given: userAns });
+
+      // Reset UI
+      inputContainer.style.display = 'none';
+      timerDiv.style.display = 'none';
+      currentQuestion++;
+
+      if (currentQuestion < questions.length) {
+        askQuestion();
+      } else {
+        showResults();
+      }
+    }
+
+    function showResults() {
+      questionNumberDiv.style.display = 'none';
+      resultsDiv.style.display = 'block';
+      const correctCount = userAnswers.filter(a => a.correct).length;
+      resultsDiv.innerHTML = `
+        <h2>You got ${correctCount} out of ${questions.length} correct!</h2>
+        <ul>
+          ${userAnswers.map((a,i) => `<li>Q${i+1}: ${a.correct ? 'Correct' : `Incorrect (you answered ${a.given})`}</li>`).join('')}
+        </ul>
+        <button onclick="startQuiz()">Retry Quiz</button>
+      `;
+    }
+  </script>
+</body>
+</html>
